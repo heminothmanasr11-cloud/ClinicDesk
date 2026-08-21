@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function role() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role; }
+    function doctor() { return signedIn() && role() == 'doctor'; }
+    function staff() { return signedIn() && (role() == 'doctor' || role() == 'secretary'); }
+    match /users/{id} {
+      allow read: if signedIn() && request.auth.uid == id;
+      allow create: if signedIn() && request.auth.uid == id;
+      allow update, delete: if false;
+    }
+    match /patients/{id} { allow read, create, update: if staff(); allow delete: if doctor(); }
+    match /appointments/{id} { allow read, create, update: if staff(); allow delete: if doctor(); }
+    match /visits/{id} { allow read, create, update, delete: if doctor(); }
+  }
+}
