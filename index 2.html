@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClinicDesk</title>
+<style>
+:root{--blue:#2563eb;--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#667085;--line:#e4e7ec}
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+header{height:70px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 28px;gap:14px}
+.logo{font-size:26px;font-weight:800;color:var(--blue)} .sub{color:var(--muted)}
+.layout{display:flex;height:calc(100vh - 70px)} nav{width:210px;background:#fff;border-right:1px solid var(--line);padding:18px 10px}
+nav button{display:block;width:100%;border:0;background:transparent;text-align:left;padding:12px 14px;border-radius:8px;font-size:15px;margin:3px 0;color:#475467;cursor:pointer}
+nav button:hover,nav button.active{background:#eef4ff;color:var(--blue);font-weight:700}
+main{flex:1;padding:28px;overflow:auto}.page{display:none}.page.active{display:block}
+h1{margin:0 0 22px;font-size:27px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px}
+.stat{font-size:34px;font-weight:800;color:var(--blue)}.label{color:var(--muted);margin-top:4px}
+.toolbar{display:flex;gap:10px;margin-bottom:16px;align-items:center}.toolbar input{max-width:420px}
+button.primary,.primary{background:var(--blue);color:#fff;border:0;padding:10px 15px;border-radius:8px;font-weight:650;cursor:pointer}
+button.secondary{background:#fff;border:1px solid var(--line);padding:10px 15px;border-radius:8px;cursor:pointer}
+input,select,textarea{width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:7px;font:inherit;background:#fff}textarea{min-height:80px;resize:vertical}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}th,td{padding:12px;text-align:left;border-bottom:1px solid var(--line)}th{font-size:13px;color:var(--muted);background:#fafafa}tr{cursor:pointer}tr:hover{background:#fafcff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.form-card{background:#fff;border:1px solid var(--line);padding:22px;border-radius:12px}
+.field{margin-bottom:13px}.field label{display:block;font-size:13px;font-weight:650;margin-bottom:6px;color:#475467}.section{font-size:17px;font-weight:750;margin:22px 0 12px}
+.hidden{display:none!important}.danger{background:#dc2626!important}.small{font-size:13px;color:var(--muted)}
+.badge{padding:4px 8px;border-radius:20px;background:#eef4ff;color:var(--blue);font-size:12px;font-weight:700}
+@media(max-width:850px){nav{width:60px}nav button{font-size:0;padding:14px}main{padding:16px}.grid,.two{grid-template-columns:1fr}.sub{display:none}}
+</style>
+</head>
+<body>
+<header><div class="logo">ClinicDesk</div><div class="sub">Personal Offline Clinic Management System</div></header>
+<div class="layout">
+<nav>
+<button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
+<button onclick="showPage('patients',this)">Patients</button>
+<button onclick="showPage('consultations',this)">Consultations</button>
+<button onclick="showPage('appointments',this)">Appointments</button>
+<button onclick="showPage('tools',this)">Backup & Tools</button>
+</nav>
+<main>
+<section id="dashboard" class="page active"><h1>Dashboard</h1><div class="grid">
+<div class="card"><div id="patientCount" class="stat">0</div><div class="label">Total Patients</div></div>
+<div class="card"><div id="visitCount" class="stat">0</div><div class="label">Total Consultations</div></div>
+<div class="card"><div id="todayCount" class="stat">0</div><div class="label">Appointments Today</div></div>
+</div><div class="section">Today's Appointments</div><div id="todayList" class="card small">No appointments today.</div></section>
+
+<section id="patients" class="page"><h1>Patients</h1>
+<div class="toolbar"><input id="patientSearch" placeholder="Search by patient name, phone or ID..." oninput="renderPatients()"><button class="primary" onclick="newPatient()">+ New Patient</button></div>
+<div id="patientForm" class="form-card hidden"></div>
+<table><thead><tr><th>ID</th><th>Patient</th><th>Phone</th><th>Date Added</th></tr></thead><tbody id="patientsTable"></tbody></table></section>
+
+<section id="consultations" class="page"><h1>Consultations</h1>
+<div id="consultationForm" class="form-card"></div><div class="section">Patient Consultation History</div>
+<div class="toolbar"><select id="historyPatient" onchange="renderHistory()"></select></div>
+<table><thead><tr><th>Date</th><th>Chief Complaint</th><th>Diagnosis</th><th>Follow-up</th></tr></thead><tbody id="historyTable"></tbody></table></section>
+
+<section id="appointments" class="page"><h1>Appointments</h1>
+<div class="toolbar"><button class="primary" onclick="newAppointment()">+ New Appointment</button></div><div id="appointmentForm" class="form-card hidden"></div>
+<table><thead><tr><th>Date</th><th>Time</th><th>Patient</th><th>Reason</th><th>Status</th></tr></thead><tbody id="appointmentsTable"></tbody></table></section>
+
+<section id="tools" class="page"><h1>Backup & Tools</h1><div class="form-card">
+<div class="section">Backup ClinicDesk</div><p class="small">Download a complete backup containing patients, consultations and appointments.</p><button class="primary" onclick="backup()">Download Backup</button>
+<div class="section">Restore Backup</div><p class="small">Restore ClinicDesk from a previously downloaded backup.</p><input type="file" accept=".json" onchange="restore(event)">
+<div class="section">Export Patients</div><button class="secondary" onclick="exportCSV()">Export Patients as CSV</button>
+<div class="section">Data Storage</div><p class="small">This offline version stores your ClinicDesk data locally in this browser on this Mac. Keep regular backups.</p>
+</div></section>
+</main></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyAvtrRdkedS3BrfOxud_IDvSq8HZ-WKITU",authDomain:"clinic-system-1959d.firebaseapp.com",projectId:"clinic-system-1959d",storageBucket:"clinic-system-1959d.firebasestorage.app",messagingSenderId:"520009437911",appId:"1:520009437911:web:6af77ec4de0438b7d85692"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),store=getFirestore(app);let db={patients:[],visits:[],appointments:[]},profile=null,unsubs=[];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); const today=()=>new Date().toISOString().slice(0,10);
+function role(){return profile?.role||'secretary'} function isDoctor(){return role()==='doctor'}
+function dateVal(v){return v?.toDate?v.toDate().toISOString().slice(0,10):v||today()}
+function updateAll(){renderDashboard();renderPatients();renderPatientOptions();renderHistory();renderAppointments()}
+function showPage(id,btn){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');btn.classList.add('active');updateAll()}
+function patientName(id){return db.patients.find(x=>x.id===id)?.name||'Unknown'}
+function renderDashboard(){patientCount.textContent=db.patients.length;visitCount.textContent=db.visits.length;let a=db.appointments.filter(x=>x.date===today());todayCount.textContent=a.length;todayList.innerHTML=a.length?a.map(x=>`<div style="padding:8px 0;border-bottom:1px solid #eee"><b>${esc(x.time||'—')}</b> — ${esc(patientName(x.patientId))} <span class="badge">${esc(x.status)}</span><div class="small">${esc(x.reason||'')}</div></div>`).join(''):'No appointments today.'}
+function field(label,id,value='',area=false,type='text'){return `<div class="field"><label>${label}</label>${area?`<textarea id="p_${id}">${esc(value)}</textarea>`:`<input id="p_${id}" type="${type}" value="${esc(value)}">`}</div>`}
+function newPatient(p=null){const f=document.getElementById('patientForm');f.classList.remove('hidden');const x=p||{};f.innerHTML=`<h2>${p?'Patient Profile':'New Patient'}</h2><div class="two">${field('Full Name','name',x.name)}${field('Date of Birth','dob',x.dob,false,'date')}${field('Gender','gender',x.gender)}${field('Phone','phone',x.phone)}${field('Address','address',x.address,true)}${field('Allergies','allergies',x.allergies,true)}${field('Chronic Conditions','chronic',x.chronic,true)}${field('Current Medications','medications',x.medications,true)}${field('Medical History','medicalHistory',x.medicalHistory,true)}${field('Surgical History','surgicalHistory',x.surgicalHistory,true)}${field('Family History','familyHistory',x.familyHistory,true)}</div><div class="toolbar"><button class="primary" onclick="savePatient('${x.id||''}')">${p?'Save Changes':'Save Patient'}</button>${p&&isDoctor()?`<button class="primary danger" onclick="deletePatient('${x.id}')">Delete</button>`:''}<button class="secondary" onclick="patientForm.classList.add('hidden')">Cancel</button></div>`}
+function pv(id){return document.getElementById('p_'+id).value.trim()}
+async function savePatient(id){if(!pv('name'))return alert('Patient name is required.');let p={name:pv('name'),dob:pv('dob'),gender:pv('gender'),phone:pv('phone'),address:pv('address'),allergies:pv('allergies'),chronic:pv('chronic'),medications:pv('medications'),medicalHistory:pv('medicalHistory'),surgicalHistory:pv('surgicalHistory'),familyHistory:pv('familyHistory'),updatedAt:serverTimestamp()};try{if(id)await updateDoc(doc(store,'patients',id),p);else{p.createdAt=serverTimestamp();p.createdBy=auth.currentUser.uid;await addDoc(collection(store,'patients'),p)}patientForm.classList.add('hidden')}catch(e){alert('Could not save patient: '+e.message)}}
+async function deletePatient(id){if(!confirm('Delete this patient?'))return;try{await deleteDoc(doc(store,'patients',id));patientForm.classList.add('hidden')}catch(e){alert(e.message)}}
+function renderPatients(){let q=(patientSearch.value||'').toLowerCase();patientsTable.innerHTML=db.patients.filter(p=>[p.id,p.name,p.phone].join(' ').toLowerCase().includes(q)).sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(p=>`<tr onclick="openPatient('${p.id}')"><td>${esc(p.id.slice(0,8).toUpperCase())}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.phone)}</td><td>${esc(dateVal(p.createdAt))}</td></tr>`).join('')||'<tr><td colspan="4" class="small">No patients yet.</td></tr>'}
+function openPatient(id){const p=db.patients.find(x=>x.id===id);if(!p){alert('Patient could not be found. Please refresh the page.');return;}newPatient(p)}
+function renderPatientOptions(){let opts='<option value="">Select a patient...</option>'+db.patients.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(p=>`<option value="${p.id}">${esc(p.name)} — ${esc(p.id.slice(0,8).toUpperCase())}</option>`).join('');let old=historyPatient.value;historyPatient.innerHTML=opts;if(db.patients.some(p=>p.id===old))historyPatient.value=old;buildConsultationForm(opts)}
+function field2(label,id,value='',type='text',area=false){return `<div class="field"><label>${label}</label>${area?`<textarea id="${id}">${esc(value)}</textarea>`:`<input id="${id}" type="${type}" value="${esc(value)}">`}</div>`} function gv(id){return document.getElementById(id).value.trim()}
+function buildConsultationForm(opts){if(!isDoctor()){consultationForm.innerHTML='<p class="small">Consultation records are available only to the Doctor account.</p>';return}consultationForm.innerHTML=`<h2>New Consultation</h2><div class="two"><div class="field"><label>Patient</label><select id="v_patient">${opts}</select></div>${field2('Visit Date','v_date',today(),'date')}${field2('Chief Complaint','v_complaint','','text',true)}${field2('History','v_history','','text',true)}${field2('Blood Pressure','v_bp')}${field2('Pulse','v_pulse')}${field2('Temperature','v_temp')}${field2('Weight','v_weight')}${field2('Height','v_height')}${field2('Examination','v_exam','','text',true)}${field2('Diagnosis','v_diagnosis','','text',true)}${field2('Investigations','v_investigations','','text',true)}${field2('Treatment Plan','v_treatment','','text',true)}${field2('Prescription','v_prescription','','text',true)}${field2('Follow-up Date','v_followup','','date')}${field2('Private Notes','v_notes','','text',true)}</div><button class="primary" onclick="saveVisit()">Save Consultation</button>`}
+async function saveVisit(){let pid=gv('v_patient');if(!pid)return alert('Select a patient.');let v={patientId:pid,date:gv('v_date'),complaint:gv('v_complaint'),history:gv('v_history'),bp:gv('v_bp'),pulse:gv('v_pulse'),temperature:gv('v_temp'),weight:gv('v_weight'),height:gv('v_height'),examination:gv('v_exam'),diagnosis:gv('v_diagnosis'),investigations:gv('v_investigations'),treatment:gv('v_treatment'),prescription:gv('v_prescription'),followup:gv('v_followup'),notes:gv('v_notes'),createdAt:serverTimestamp(),createdBy:auth.currentUser.uid};try{await addDoc(collection(store,'visits'),v);alert('Consultation saved.')}catch(e){alert(e.message)}}
+function renderHistory(){let id=historyPatient.value;historyTable.innerHTML=db.visits.filter(v=>!id||v.patientId===id).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(v=>`<tr><td>${esc(v.date)}</td><td>${esc(v.complaint)}</td><td>${esc(v.diagnosis)}</td><td>${esc(v.followup)}</td></tr>`).join('')||'<tr><td colspan="4" class="small">No consultations found.</td></tr>'}
+function newAppointment(){appointmentForm.classList.remove('hidden');appointmentForm.innerHTML=`<h2>New Appointment</h2><div class="two"><div class="field"><label>Patient</label><select id="a_patient"><option value="">Select patient...</option>${db.patients.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>${field2('Date','a_date',today(),'date')}${field2('Time','a_time','','time')}${field2('Reason','a_reason','','text',true)}${field2('Notes','a_notes','','text',true)}</div><button class="primary" onclick="saveAppointment()">Save Appointment</button>`}
+async function saveAppointment(){if(!gv('a_patient'))return alert('Select a patient.');try{await addDoc(collection(store,'appointments'),{patientId:gv('a_patient'),date:gv('a_date'),time:gv('a_time'),reason:gv('a_reason'),notes:gv('a_notes'),status:'Scheduled',createdAt:serverTimestamp()});appointmentForm.classList.add('hidden')}catch(e){alert(e.message)}}
+function renderAppointments(){appointmentsTable.innerHTML=db.appointments.slice().sort((a,b)=>((a.date||'')+(a.time||'')).localeCompare((b.date||'')+(b.time||''))).map(a=>`<tr onclick="toggleAppointment('${a.id}')"><td>${esc(a.date)}</td><td>${esc(a.time)}</td><td><b>${esc(patientName(a.patientId))}</b></td><td>${esc(a.reason)}</td><td><span class="badge">${esc(a.status)}</span></td></tr>`).join('')||'<tr><td colspan="5" class="small">No appointments yet.</td></tr>'}
+async function toggleAppointment(id){let a=db.appointments.find(x=>x.id===id);if(!a)return;try{await updateDoc(doc(store,'appointments',id),{status:a.status==='Completed'?'Scheduled':'Completed'})}catch(e){alert(e.message)}}
+function backup(){let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});download(blob,`ClinicDesk_Backup_${today()}.json`)}
+function restore(e){alert('For the synchronized version, backup restore should be done carefully to avoid overwriting shared clinic data.')}
+function exportCSV(){let cols=['id','name','dob','gender','phone','address','allergies','chronic','medications','medicalHistory','surgicalHistory','familyHistory'];let text=cols.join(',')+'\n'+db.patients.map(p=>cols.map(c=>`"${String(p[c]||'').replaceAll('"','""')}"`).join(',')).join('\n');download(new Blob([text],{type:'text/csv'}),'ClinicDesk_Patients.csv')}
+function download(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}
+function addHeaderAuth(){document.querySelector('header').innerHTML=`<div class="logo">ClinicDesk</div><div class="sub">Shared Clinic Management System</div><div style="margin-left:auto" class="small" id="userInfo"></div><button class="secondary" onclick="logout()">Sign Out</button>`}
+function startSync(){unsubs.forEach(f=>f());unsubs=[];unsubs.push(onSnapshot(collection(store,'patients'),s=>{db.patients=s.docs.map(d=>({id:d.id,...d.data()}));updateAll()}));unsubs.push(onSnapshot(collection(store,'appointments'),s=>{db.appointments=s.docs.map(d=>({id:d.id,...d.data()}));updateAll()}));if(isDoctor())unsubs.push(onSnapshot(collection(store,'visits'),s=>{db.visits=s.docs.map(d=>({id:d.id,...d.data()}));updateAll()}));else db.visits=[];updateAll()}
+async function logout(){await signOut(auth)}
+window.showPage=showPage;window.newPatient=newPatient;window.openPatient=openPatient;window.savePatient=savePatient;window.deletePatient=deletePatient;window.renderPatients=renderPatients;window.renderHistory=renderHistory;window.saveVisit=saveVisit;window.newAppointment=newAppointment;window.saveAppointment=saveAppointment;window.toggleAppointment=toggleAppointment;window.backup=backup;window.restore=restore;window.exportCSV=exportCSV;window.logout=logout;
+onAuthStateChanged(auth,async u=>{if(!u){let email=prompt('ClinicDesk sign in\nEmail:');if(!email)return;let pass=prompt('Password:');try{await signInWithEmailAndPassword(auth,email,pass)}catch(e){alert('Sign in failed: '+e.message)}}else{let s=await getDoc(doc(store,'users',u.uid));profile=s.exists()?s.data():{role:'doctor'};addHeaderAuth();userInfo.textContent=`${u.email} • ${role().toUpperCase()}`;startSync()}});
+</script></body></html>
